@@ -1,0 +1,35 @@
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/" },
+    { "source": "/admin/(.*)", "destination": "/" },
+    { "source": "/login", "destination": "/" },
+    { "source": "/login/(.*)", "destination": "/" },
+    { "source": "/chatbot", "destination": "/" },
+    { "source": "/chatbot/(.*)", "destination": "/" },
+    { "source": "/exam", "destination": "/" },
+    { "source": "/exam/(.*)", "destination": "/" },
+    { "source": "/documents", "destination": "/" },
+    { "source": "/documents/(.*)", "destination": "/" },
+    { "source": "/under-development", "destination": "/" },
+    { "source": "/under-development/(.*)", "destination": "/" },
+    { "source": "/contact", "destination": "/" },
+    { "source": "/contact/(.*)", "destination": "/" },
+    { "source": "/teacher", "destination": "/" },
+    { "source": "/teacher/(.*)", "destination": "/" },
+    { "source": "/student", "destination": "/" },
+    { "source": "/student/(.*)", "destination": "/" },
+    { "source": "/courses/hsk", "destination": "/" },
+    { "source": "/courses/hsk/(.*)", "destination": "/" },
+    { "source": "/courses/combo-hsk", "destination": "/" },
+    { "source": "/courses/combo-hsk/(.*)", "destination": "/" },
+    { "source": "/attendance", "destination": "/" },
+    { "source": "/attendance/(.*)", "destination": "/" },
+    { "source": "/:path*", "destination": "/" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    }
+  ]
+}
