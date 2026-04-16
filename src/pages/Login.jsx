@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../components/Shared/AuthContext";
 import { apiFetch } from "../utils/api";
 import Logo from "/assets/logo/logoPinyin1.png";
+import {authService} from "../utils/authService.js";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,64 +14,75 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await apiFetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usernameOrEmail: email, password: password }),
-      });
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            // 1. Gọi hàm login từ authService
+            // Lưu ý: authService.login đã xử lý response.json() và lưu token vào localStorage rồi
+            const res = await authService.login(email, password);
 
-      if (!res.ok) throw new Error("Email hoặc mật khẩu không đúng!");
+            // 2. Kiểm tra success dựa trên object mà authService trả về
+            if (!res.success) {
+                throw new Error(res.message || "Email hoặc mật khẩu không đúng!");
+            }
 
-      const responseJson = await res.json();
-      console.log("Login response:", responseJson);
-      
-      const tokenData = responseJson.data; // TokenResponse inside ResultInfo
-      const token = tokenData.accessToken;
-      
-      const roles = tokenData.roles || [];
-      let roleNum = 0;
-      if (
-        roles.includes("ROLE_ADMIN") || roles.includes("ADMIN") ||
-        roles.includes("ROLE_CENTRE_OWNER") || roles.includes("CENTRE_OWNER") ||
-        roles.includes("ROLE_ADMIN_SYSTEM") || roles.includes("ADMIN_SYSTEM")
-      ) {
-        roleNum = 1;
-      } else if (roles.includes("ROLE_TEACHER") || roles.includes("TEACHER")) {
-        roleNum = 2;
-      } else if (roles.includes("ROLE_STUDENT") || roles.includes("STUDENT")) {
-        roleNum = 3;
-      }
-      
-      console.log("Parsed Token:", token, "Parsed RoleNum:", roleNum);
+            // 3. Lấy dữ liệu user và tokens từ kết quả trả về của authService
 
-      login(token, roleNum);
-      toast.success("Đăng nhập thành công!", { autoClose: 700 });
+            // tokens ở đây chính là data.data từ BE (chứa accessToken, roles,...)
+            const accessToken = res.data.accessToken;
+            const roles = res.data.roles || [];
 
-      setTimeout(() => {
-        switch (roleNum) {
-          case 1:
-            navigate("/admin");
-            break;
-          case 2:
-            navigate("/teacher");
-            break;
-          case 3:
-            navigate("/student");
-            break;
-          default:
-            navigate("/");
+            // 4. Phân loại Role để điều hướng (Sử dụng các hằng số từ BE trả về)
+            let roleNum = 0;
+
+            // Kiểm tra chính xác các giá trị roles trong mảng ["CENTRE_OWNER"]
+            const isAdmin = roles.some(r => ["ADMIN", "CENTRE_OWNER", "ADMIN_SYSTEM"].includes(r));
+            const isTeacher = roles.some(r => ["TEACHER"].includes(r));
+            const isStudent = roles.some(r => ["STUDENT"].includes(r));
+
+            if (isAdmin) {
+                roleNum = 1;
+            } else if (isTeacher) {
+                roleNum = 2;
+            } else if (isStudent) {
+                roleNum = 3;
+            }
+
+            console.log("Parsed Token:", accessToken, "Parsed RoleNum:", roleNum);
+
+            // 5. Gọi hàm login từ Context (nếu bạn dùng AuthContext)
+            // và truyền đúng accessToken
+            if (typeof login === 'function') {
+                login(accessToken, roleNum);
+            }
+
+            toast.success("Đăng nhập thành công!", { autoClose: 700 });
+
+            // 6. Điều hướng người dùng
+            setTimeout(() => {
+                switch (roleNum) {
+                    case 1:
+                        navigate("/admin");
+                        break;
+                    case 2:
+                        navigate("/teacher");
+                        break;
+                    case 3:
+                        navigate("/student");
+                        break;
+                    default:
+                        navigate("/");
+                }
+            }, 1000);
+
+        } catch (err) {
+            console.error("Handle login error:", err);
+            toast.error(err.message || "Đăng nhập thất bại!");
+        } finally {
+            setLoading(false);
         }
-      }, 1000);
-    } catch (err) {
-      toast.error(err.message || "Đăng nhập thất bại!");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   return (
     <div className="flex min-h-screen">
